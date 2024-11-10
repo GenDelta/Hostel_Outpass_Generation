@@ -22,6 +22,7 @@ function StudentOutPassDetails() {
 
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [outpassStatus, setOutpassStatus] = useState(null);
 
     useEffect(() => {
         if (viewOnly && listItemId) {
@@ -34,6 +35,7 @@ function StudentOutPassDetails() {
                     }
                     const data = await response.json();
                     setFormData(data);
+                    setOutpassStatus(data.status);
                 } catch (error) {
                     console.error('Error fetching outpass details:', error);
                     setError('Failed to load outpass details');
@@ -72,7 +74,6 @@ function StudentOutPassDetails() {
             }
         }
 
-        // Validate email formats
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(formData.studentEmail)) {
             setError('Invalid student email format');
@@ -83,7 +84,6 @@ function StudentOutPassDetails() {
             return false;
         }
 
-        // Validate phone numbers (assuming 10-digit format)
         const phoneRegex = /^\d{10}$/;
         if (!phoneRegex.test(formData.studentContactNumber)) {
             setError('Student contact number should be 10 digits');
@@ -112,7 +112,6 @@ function StudentOutPassDetails() {
         try {
             setLoading(true);
 
-            // First, save outpass details
             const outpassData = {
                 listItemId,
                 ...formData
@@ -130,7 +129,6 @@ function StudentOutPassDetails() {
                 throw new Error('Failed to save outpass details');
             }
 
-            // Then fetch current list items
             const listItemsResponse = await fetch(`http://localhost:3000/student/listItems?email=${formData.studentEmail}`);
             if (!listItemsResponse.ok) {
                 throw new Error('Failed to fetch list items');
@@ -138,14 +136,12 @@ function StudentOutPassDetails() {
             
             const existingListItems = await listItemsResponse.json();
             
-            // Update the specific item's submitted status
             const updatedListItems = existingListItems.map(item => 
                 item.id === listItemId 
                     ? { ...item, submitted: true }
                     : item
             );
 
-            // Save updated list items
             const listUpdateResponse = await fetch('http://localhost:3000/student/listItems', {
                 method: 'POST',
                 headers: {
@@ -161,7 +157,6 @@ function StudentOutPassDetails() {
                 throw new Error('Failed to update list items');
             }
 
-            // Navigate to confirmation page
             navigate('/confirmationpage', {
                 state: { 
                     returnPath: '/student',
@@ -174,6 +169,20 @@ function StudentOutPassDetails() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const getStatusBadge = (status) => {
+        const statusStyles = {
+            'pending': 'bg-yellow-500 text-white',
+            'approved': 'bg-green-500 text-white',
+            'rejected': 'bg-red-500 text-white'
+        };
+
+        return (
+            <span className={`${statusStyles[status]} px-3 py-1 rounded-full text-sm font-semibold`}>
+                {status.charAt(0).toUpperCase() + status.slice(1)}
+            </span>
+        );
     };
 
     if (loading) {
@@ -196,6 +205,12 @@ function StudentOutPassDetails() {
                     <div className='text-black rounded'>
                         <p className="font-semibold">Student Name: {formData.studentName}</p>
                         <p>Email: {formData.studentEmail}</p>
+                        {viewOnly && outpassStatus && (
+                            <div className="mt-4">
+                                <p className="font-semibold mb-2">Outpass Status:</p>
+                                {getStatusBadge(outpassStatus)}
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -210,19 +225,12 @@ function StudentOutPassDetails() {
                     {!viewOnly && (
                         <button 
                             onClick={handleConfirmAndNext} 
-                            className="w-full py-2 bg-green-600 rounded hover:bg-green-700 disabled:opacity-50"
+                            className="w-full py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
                             disabled={loading}
                         >
                             {loading ? 'Submitting...' : 'Confirm and Next'}
                         </button>
                     )}
-                    {/* <button 
-                        onClick={() => navigate('/student')} 
-                        className="w-full py-2 bg-red-600 rounded hover:bg-red-700 disabled:opacity-50"
-                        disabled={loading}
-                    >
-                        Cancel
-                    </button> */}
                 </div>
             </div>
 

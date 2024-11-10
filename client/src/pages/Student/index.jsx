@@ -7,32 +7,44 @@ function Student({ email: propEmail }) {
     const [listItems, setListItems] = useState([]);
     const navigate = useNavigate();
     const [error, setError] = useState('');
-
-    // Add key to track when to reload
     const [reloadKey, setReloadKey] = useState(0);
 
-    useEffect(() => {
-        const loadListItems = async () => {
-            try {
-                if (!email) return;
-                
-                const response = await fetch(`http://localhost:3000/student/listItems?email=${email}`);
-                if (!response.ok) {
-                    throw new Error(`Error: ${response.status}`);
-                }
-                const data = await response.json();
-                setListItems(data || []);
-            } catch (error) {
-                console.error('Error loading list items:', error);
-                setError('Failed to load list items');
+    const getListItems = async () => {
+        try {
+            if (!email) return;
+            
+            const response = await fetch(`http://localhost:3000/student/listItems?email=${email}`);
+            if (!response.ok) {
+                throw new Error(`Error: ${response.status}`);
             }
-        };
-
-        loadListItems();
-    }, [email, reloadKey]); // Add reloadKey to dependencies
+            const data = await response.json();
+            
+            // Simplify the processing of items
+            const processedItems = data.map(item => ({
+                ...item,
+                submitted: item.submitted || false
+            }));
+            
+            setListItems(processedItems);
+        } catch (error) {
+            console.error('Error loading list items:', error);
+            setError('Failed to load list items');
+        }
+    };
 
     useEffect(() => {
-        // If we're returning from confirmation page, reload the data
+        getListItems();
+    }, [email, reloadKey]);
+
+    useEffect(() => {
+        const intervalId = setInterval(() => {
+            setReloadKey(prev => prev + 1);
+        }, 30000); // Poll every 30 seconds
+
+        return () => clearInterval(intervalId);
+    }, []);
+
+    useEffect(() => {
         if (location.state?.reload) {
             setReloadKey(prev => prev + 1);
         }
@@ -42,18 +54,19 @@ function Student({ email: propEmail }) {
         navigate('/studentdetails', { 
             state: { 
                 listItemId: listItem.id,
+                outpassId: listItem.outpassId,
                 viewOnly: listItem.submitted,
                 email: email
             }
         });
     };
 
-    // Rest of the component remains the same...
     const createListItem = () => {
         const newItem = {
             id: Date.now().toString(),
             outpass: "Outpass",
-            submitted: false
+            submitted: false,
+            outpassId: null
         };
         setListItems(prevItems => {
             const updatedItems = [newItem, ...prevItems];
@@ -82,12 +95,16 @@ function Student({ email: propEmail }) {
 
     const deleteListItem = async (id) => {
         try {
-            const deleteDetailsResponse = await fetch(`http://localhost:3000/student/outpassDetails/${id}`, {
-                method: 'DELETE',
-            });
-            
-            if (!deleteDetailsResponse.ok) {
-                throw new Error('Failed to delete outpass details');
+            const itemToDelete = listItems.find(item => item.id === id);
+            if (itemToDelete?.outpassId) {
+                const deleteDetailsResponse = await fetch(
+                    `http://localhost:3000/student/outpassDetails/${itemToDelete.outpassId}`,
+                    { method: 'DELETE' }
+                );
+                
+                if (!deleteDetailsResponse.ok) {
+                    throw new Error('Failed to delete outpass details');
+                }
             }
 
             const updatedItems = listItems.filter(item => item.id !== id);
@@ -128,21 +145,25 @@ function Student({ email: propEmail }) {
                 <ul className="relative mt-12 m-12">
                     {listItems.map(item => (
                         <li key={item.id} className="bg-gray-200 p-4 m-7">
-                            <p className="inline-block">Outpass: </p>
-                            <button
-                                onClick={() => handle(item)}
-                                className="sm:block sm:w-36 sm:left-1/4 bg-lime-500 md:inline-block sticky md:left-[90%] md:w-40 h-8 text-center scale-100 transition-transform duration-300 hover:scale-110 hover:bg-lime-700 active:bg-lime-950"
-                                type="button"
-                            >
-                                {item.submitted ? 'View' : 'Enter'}
-                            </button>
-                            <button
-                                onClick={() => deleteListItem(item.id)}
-                                className="sm:block sm:w-36 sm:left-1/4 bg-red-500 md:inline-block sticky md:left-[70%] md:w-40 h-8 text-center scale-100 transition-transform duration-300 hover:scale-110 hover:bg-red-700 active:bg-red-950"
-                                type="button"
-                            >
-                                Delete
-                            </button>
+                            <div className="mb-2">
+                                <p className="inline-block">Outpass</p>
+                            </div>
+                            <div className="flex justify-end space-x-4">
+                                <button
+                                    onClick={() => handle(item)}
+                                    className="bg-lime-500 px-4 py-2 rounded text-white scale-100 transition-transform duration-300 hover:scale-110 hover:bg-lime-700 active:bg-lime-950"
+                                    type="button"
+                                >
+                                    {item.submitted ? 'View' : 'Enter'}
+                                </button>
+                                <button
+                                    onClick={() => deleteListItem(item.id)}
+                                    className="bg-red-500 px-4 py-2 rounded text-white scale-100 transition-transform duration-300 hover:scale-110 hover:bg-red-700 active:bg-red-950"
+                                    type="button"
+                                >
+                                    Delete
+                                </button>
+                            </div>
                         </li>
                     ))}
                 </ul>
@@ -150,6 +171,5 @@ function Student({ email: propEmail }) {
         </div>
     );
 }
-
 
 export default Student;

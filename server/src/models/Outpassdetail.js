@@ -12,7 +12,16 @@ const outpassDetailSchema = new mongoose.Schema({
     leaveFromTime: String,
     leaveTo: String,
     leaveToTime: String,
-    reasonForAbsence: String
+    reasonForAbsence: String,
+    status: {
+        type: String,
+        enum: ['pending', 'approved', 'rejected'],
+        default: 'pending'
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now
+    }
 });
 
 module.exports = mongoose.model('OutpassDetail', outpassDetailSchema);

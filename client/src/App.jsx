@@ -8,6 +8,8 @@ import Register from './pages/Register';
 import Student from './pages/Student';
 import StudentDetails from "./pages/Student/Studentdetails";
 import ConfirmationPage from "./pages/Student/Confirmationpage";
+import AdminOutpassView from "./pages/Admin/AdminOutpassView";
+
 
 function App() {
   const [buttonValue, setButtonValue] = useState("");
@@ -28,6 +30,8 @@ function App() {
           <Route path="/student" element={<StudentRoute onClick={getData} />} />
           <Route path="/studentdetails" element={<StudentDetails />} />
           <Route path="/confirmationpage" element={<ConfirmationPage />} />
+          <Route path="/admin-outpass-view" element={<AdminOutpassView />} />
+          
         </Routes>
       </div>
     </Router>

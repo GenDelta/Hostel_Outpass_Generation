@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
+const mongoose = require('mongoose');
 const Student = require('../models/Student');
 const OutpassDetail = require('../models/Outpassdetail');
 const Admin = require('../models/Admin');
@@ -28,13 +29,15 @@ router.post('/register', upload.single('photo'), async (req, res) => {
         email,
         password,
         prn,
-        photo
+        photo,
+        listItems: [] // Initialize with empty list items
     });
 
     try {
         await newStudent.save();
         res.status(201).send('Student registered');
     } catch (err) {
+        console.error('Registration error:', err);
         res.status(400).send('Error registering student');
     }
 });
@@ -42,7 +45,7 @@ router.post('/register', upload.single('photo'), async (req, res) => {
 // Login route
 router.post('/login', async (req, res) => {
     const { email, password } = req.body;
-    console.log('Request body:', req.body);
+    console.log('Login attempt for:', email);
 
     if (!email || !password) {
         console.log('Missing email or password');
@@ -53,31 +56,24 @@ router.post('/login', async (req, res) => {
         // Check in Admin collection
         let user = await Admin.findOne({ email });
         if (user) {
-            console.log(`Admin found: ${user.email}`);
             const match = user.password === password;
-            console.log(`Password match for Admin: ${match}`);
             if (match) return res.status(200).json({ role: 'Admin' });
         }
 
         // Check in Student collection
         user = await Student.findOne({ email });
         if (user) {
-            console.log(`Student found: ${user.email}`);
             const match = user.password === password;
-            console.log(`Password match for Student: ${match}`);
             if (match) return res.status(200).json({ role: 'Student' });
         }
 
         // Check in Security collection
         user = await Security.findOne({ email });
         if (user) {
-            console.log(`Security found: ${user.email}`);
             const match = user.password === password;
-            console.log(`Password match for Security: ${match}`);
             if (match) return res.status(200).json({ role: 'Security' });
         }
 
-        console.log('Invalid email or password');
         res.status(400).json({ message: 'Invalid email or password' });
     } catch (error) {
         console.error('Server error during login:', error);
@@ -85,51 +81,91 @@ router.post('/login', async (req, res) => {
     }
 });
 
-// Endpoint to get list items for a student
+// Get list items for a student
 router.get('/listItems', async (req, res) => {
     const { email } = req.query;
+    console.log('Fetching list items for email:', email);
+
     try {
         const student = await Student.findOne({ email });
-        if (student) {
-            res.status(200).json(student.listItems);
-        } else {
-            res.status(404).json({ message: 'Student not found' });
+        if (!student) {
+            console.log('Student not found:', email);
+            return res.status(404).json({ message: 'Student not found' });
         }
+
+        // Ensure each list item has a status
+        const listItems = student.listItems.map(item => ({
+            ...item.toObject(),
+            status: item.status || (item.submitted ? 'pending' : 'not submitted')
+        }));
+
+        console.log('Sending list items:', listItems);
+        res.status(200).json(listItems);
     } catch (error) {
+        console.error('Error fetching list items:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
 
-// Endpoint to update list items for a student
+// Update list items for a student
 router.post('/listItems', async (req, res) => {
     const { email, listItems } = req.body;
-    console.log('Received email:', email);
-    console.log('Received listItems:', listItems);
+    console.log('Updating list items for email:', email);
+    console.log('New list items:', listItems);
+
     try {
         const student = await Student.findOneAndUpdate(
             { email },
             { $set: { listItems } },
             { new: true }
         );
-        if (student) {
-            res.status(200).json(student.listItems);
-        } else {
-            res.status(404).json({ message: 'Student not found' });
+
+        if (!student) {
+            console.log('Student not found for update:', email);
+            return res.status(404).json({ message: 'Student not found' });
         }
+
+        console.log('Updated list items:', student.listItems);
+        res.status(200).json(student.listItems);
     } catch (error) {
         console.error('Error updating list items:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
 
-// Add new route for saving outpass details
+// Create new outpass details
 router.post('/outpassDetails', async (req, res) => {
+    console.log('Creating new outpass details:', req.body);
+
     try {
         const outpassDetail = new OutpassDetail({
             ...req.body,
-            reasonForAbsence: req.body.reasonForAbsence // Explicitly include reason
+            listItemId: req.body.listItemId,
+            status: 'pending',
+            createdAt: new Date()
         });
         await outpassDetail.save();
+        console.log('Created outpass detail:', outpassDetail);
+
+        // Update the list item with status and outpassId
+        const student = await Student.findOne({ email: req.body.studentEmail });
+        if (student) {
+            const updatedListItems = student.listItems.map(item => 
+                item.id === req.body.listItemId 
+                    ? { 
+                        ...item, 
+                        submitted: true,
+                        status: 'pending',
+                        outpassId: outpassDetail._id.toString()
+                    }
+                    : item
+            );
+            
+            student.listItems = updatedListItems;
+            await student.save();
+            console.log('Updated student list items with new outpass');
+        }
+
         res.status(201).json(outpassDetail);
     } catch (error) {
         console.error('Error saving outpass details:', error);
@@ -137,24 +173,78 @@ router.post('/outpassDetails', async (req, res) => {
     }
 });
 
-// Add route for fetching outpass details
-router.get('/outpassDetails/:listItemId', async (req, res) => {
+// Get outpass details
+router.get('/outpassDetails/:id', async (req, res) => {
     try {
-        const outpassDetail = await OutpassDetail.findOne({ listItemId: req.params.listItemId });
-        if (outpassDetail) {
-            res.status(200).json(outpassDetail);
-        } else {
-            res.status(404).json({ message: 'Outpass details not found' });
+        console.log('Fetching outpass details for ID:', req.params.id);
+        
+        let outpassDetail;
+        
+        // Try to find by MongoDB ObjectId
+        if (mongoose.Types.ObjectId.isValid(req.params.id)) {
+            outpassDetail = await OutpassDetail.findById(req.params.id);
         }
+        
+        // If not found, try to find by listItemId
+        if (!outpassDetail) {
+            outpassDetail = await OutpassDetail.findOne({ listItemId: req.params.id });
+        }
+
+        if (!outpassDetail) {
+            console.log('No outpass details found for ID:', req.params.id);
+            return res.status(404).json({ message: 'Outpass details not found' });
+        }
+
+        console.log('Found outpass details:', outpassDetail);
+        res.status(200).json(outpassDetail);
     } catch (error) {
+        console.error('Error fetching outpass details:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
 
-// Add this new route to handle deleting outpass details
-router.delete('/outpassDetails/:listItemId', async (req, res) => {
+// Delete outpass details
+router.delete('/outpassDetails/:id', async (req, res) => {
     try {
-        const result = await OutpassDetail.findOneAndDelete({ listItemId: req.params.listItemId });
+        console.log('Deleting outpass details for ID:', req.params.id);
+        
+        let result;
+        let outpassDetail;
+        
+        // Find the outpass detail first to get associated student email
+        if (mongoose.Types.ObjectId.isValid(req.params.id)) {
+            outpassDetail = await OutpassDetail.findById(req.params.id);
+        }
+        if (!outpassDetail) {
+            outpassDetail = await OutpassDetail.findOne({ listItemId: req.params.id });
+        }
+
+        if (outpassDetail) {
+            // Delete the outpass detail
+            result = await OutpassDetail.findByIdAndDelete(outpassDetail._id);
+
+            // Update the student's list item
+            if (outpassDetail.studentEmail) {
+                const student = await Student.findOne({ email: outpassDetail.studentEmail });
+                if (student) {
+                    const updatedListItems = student.listItems.map(item => {
+                        if (item.outpassId === outpassDetail._id.toString()) {
+                            return {
+                                ...item,
+                                submitted: false,
+                                status: 'not submitted',
+                                outpassId: null
+                            };
+                        }
+                        return item;
+                    });
+                    student.listItems = updatedListItems;
+                    await student.save();
+                    console.log('Updated student list items after deletion');
+                }
+            }
+        }
+
         if (result) {
             res.status(200).json({ message: 'Outpass details deleted successfully' });
         } else {
@@ -165,81 +255,73 @@ router.delete('/outpassDetails/:listItemId', async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 });
-// Update the outpass details POST route to handle submission status
-router.post('/outpassDetails', async (req, res) => {
-    try {
-        // Save the outpass details
-        const outpassDetail = new OutpassDetail({
-            ...req.body,
-            reasonForAbsence: req.body.reasonForAbsence
-        });
-        await outpassDetail.save();
 
-        // Update the list item's submitted status
-        const student = await Student.findOne({ email: req.body.studentEmail });
+// Get pending outpasses for admin
+router.get('/pendingOutpasses', async (req, res) => {
+    try {
+        const pendingOutpasses = await OutpassDetail.find({ status: 'pending' })
+            .sort({ createdAt: -1 });
+        console.log('Fetched pending outpasses:', pendingOutpasses.length);
+        res.status(200).json(pendingOutpasses);
+    } catch (error) {
+        console.error('Error fetching pending outpasses:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Admin decision on outpass
+router.post('/admin/outpass/:outpassId/decision', async (req, res) => {
+    const { outpassId } = req.params;
+    const { decision } = req.body;
+    console.log(`Processing ${decision} decision for outpass:`, outpassId);
+
+    if (!['approve', 'reject'].includes(decision)) {
+        return res.status(400).json({ message: 'Invalid decision' });
+    }
+
+    try {
+        let outpass;
+        
+        // Try to find by MongoDB ObjectId first
+        if (mongoose.Types.ObjectId.isValid(outpassId)) {
+            outpass = await OutpassDetail.findById(outpassId);
+        }
+        
+        // If not found, try to find by listItemId
+        if (!outpass) {
+            outpass = await OutpassDetail.findOne({ listItemId: outpassId });
+        }
+
+        if (!outpass) {
+            console.log('Outpass not found:', outpassId);
+            return res.status(404).json({ message: 'Outpass not found' });
+        }
+
+        // Update the status in OutpassDetail
+        const newStatus = decision === 'approve' ? 'approved' : 'rejected';
+        outpass.status = newStatus;
+        await outpass.save();
+        console.log('Updated outpass status to:', newStatus);
+
+        // Update the status in Student's listItems
+        const student = await Student.findOne({ email: outpass.studentEmail });
         if (student) {
             const updatedListItems = student.listItems.map(item => 
-                item.id === req.body.listItemId 
-                    ? { ...item, submitted: true }
+                item.outpassId === outpass._id.toString()
+                    ? { ...item, status: newStatus }
                     : item
             );
-            
             student.listItems = updatedListItems;
             await student.save();
+            console.log('Updated student list items with new status');
         }
 
-        res.status(201).json(outpassDetail);
+        res.status(200).json({
+            message: `Outpass ${decision}ed successfully`,
+            outpass: outpass
+        });
     } catch (error) {
-        console.error('Error saving outpass details:', error);
-        res.status(500).json({ message: 'Server error' });
-    }
-});
-
-// Update the GET route for list items to include submitted status
-router.get('/listItems', async (req, res) => {
-    const { email } = req.query;
-    try {
-        const student = await Student.findOne({ email });
-        if (student) {
-            // Ensure each list item has a submitted property
-            const listItems = student.listItems.map(item => ({
-                ...item,
-                submitted: item.submitted || false
-            }));
-            res.status(200).json(listItems);
-        } else {
-            res.status(404).json({ message: 'Student not found' });
-        }
-    } catch (error) {
-        res.status(500).json({ message: 'Server error' });
-    }
-});
-
-// Update the POST route for list items to preserve submitted status
-router.post('/listItems', async (req, res) => {
-    const { email, listItems } = req.body;
-    console.log('Received email:', email);
-    console.log('Received listItems:', listItems);
-    try {
-        const student = await Student.findOne({ email });
-        if (student) {
-            // Preserve the submitted status when updating list items
-            const updatedListItems = listItems.map(newItem => {
-                const existingItem = student.listItems.find(item => item.id === newItem.id);
-                return {
-                    ...newItem,
-                    submitted: existingItem ? existingItem.submitted : false
-                };
-            });
-
-            student.listItems = updatedListItems;
-            await student.save();
-            res.status(200).json(updatedListItems);
-        } else {
-            res.status(404).json({ message: 'Student not found' });
-        }
-    } catch (error) {
-        console.error('Error updating list items:', error);
+        console.error('Error processing outpass decision:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
