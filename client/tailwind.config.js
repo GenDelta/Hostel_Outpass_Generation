@@ -3,6 +3,10 @@ export default {
   content: ["./src/**/*.{js,jsx}"],
   theme: {
     extend: {
+      backgroundImage: {
+        'sit': "url('../src/assets/images/SIT.svg')",
+        'border': "url('../src/assets/images/border2.svg')"
+      },
       colors: {
         primary: {
           DEFAULT: "#E76941",

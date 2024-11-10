@@ -1,0 +1,54 @@
+[
+  {
+    "Name": "Vedant Chavle",
+    "Email": "vedantchavle12@gmail.com",
+    "Contact": "7999278790",
+    "Pname": "Praveen kumar",
+    "Pemail": "praveenkumar@gmail.com",
+    "Pcontact": "9752417077",
+    "LeaveD": "16/07/2023",
+    "LeaveT": "5:05 PM",
+    "ReturnD": "20/07/2023",
+    "ReturnT": "6:15 PM",
+    "LeaveReason": "Taking personal time off for family matters and self-care. No urgent work commitments during this period."
+  },
+  {
+    "Name": "Ananya Sharma",
+    "Email": "ananya.sharma@example.com",
+    "Contact": "9876543210",
+    "Pname": "Rahul Sharma",
+    "Pemail": "rahul.sharma@example.com",
+    "Pcontact": "9123456789",
+    "LeaveD": "01/08/2023",
+    "LeaveT": "9:00 AM",
+    "ReturnD": "05/08/2023",
+    "ReturnT": "8:30 PM",
+    "LeaveReason": "Leave taken to attend a close family member's wedding. Required time for travel and participation in ceremonies."
+  },
+  {
+    "Name": "Rohan Gupta",
+    "Email": "rohan.gupta@example.com",
+    "Contact": "8765432109",
+    "Pname": "Meena Gupta",
+    "Pemail": "meena.gupta@example.com",
+    "Pcontact": "9876543219",
+    "LeaveD": "12/09/2023",
+    "LeaveT": "4:45 PM",
+    "ReturnD": "18/09/2023",
+    "ReturnT": "10:15 AM",
+    "LeaveReason": "Leave due to medical emergency. Required immediate attention and hospitalization for treatment."
+  },
+  {
+    "Name": "Priya Kapoor",
+    "Email": "priya.kapoor@example.com",
+    "Contact": "7654321098",
+    "Pname": "Vikram Kapoor",
+    "Pemail": "vikram.kapoor@example.com",
+    "Pcontact": "8765432198",
+    "LeaveD": "22/10/2023",
+    "LeaveT": "1:30 PM",
+    "ReturnD": "27/10/2023",
+    "ReturnT": "5:00 PM",
+    "LeaveReason": "Vacation leave to recharge and spend time with family. Trip planned for rest and relaxation."
+  }
+]
