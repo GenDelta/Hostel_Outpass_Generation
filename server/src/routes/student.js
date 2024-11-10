@@ -325,5 +325,17 @@ router.post('/admin/outpass/:outpassId/decision', async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 });
+// Get approved outpasses for security guard
+router.get('/approvedOutpasses', async (req, res) => {
+    try {
+        const approvedOutpasses = await OutpassDetail.find({ status: 'approved' })
+            .sort({ createdAt: -1 });
+        console.log('Fetched approved outpasses:', approvedOutpasses.length);
+        res.status(200).json(approvedOutpasses);
+    } catch (error) {
+        console.error('Error fetching approved outpasses:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
 
 module.exports = router;

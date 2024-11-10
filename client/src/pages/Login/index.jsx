@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from 'react-router-dom';
-import SIT from '../../assets/images/SIT.svg';
+
 import { Link } from "react-router-dom";
 
 function Login() {

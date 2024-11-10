@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { BrowserRouter as Router, Route, Routes, useLocation } from "react-router-dom";
-import Guard from "./pages/Guard";
-import Outpass from "./components/Outpass";
+import GuardOutpassView from "./pages/Guard";
+
 import Admin from './pages/Admin';
 import Login from "./pages/Login";
 import Register from './pages/Register';
@@ -23,14 +23,15 @@ function App() {
       <div>
         <Routes>
           <Route path="/" element={<Login />} />
-          <Route path="/guard" element={<Guard onClick={getData} />} />
-          <Route path="/outpass" element={<Outpass value={buttonValue} />} />
+          
+          
           <Route path="/admin" element={<Admin onClick={getData} />} />
           <Route path="/register" element={<Register />} />
           <Route path="/student" element={<StudentRoute onClick={getData} />} />
           <Route path="/studentdetails" element={<StudentDetails />} />
           <Route path="/confirmationpage" element={<ConfirmationPage />} />
           <Route path="/admin-outpass-view" element={<AdminOutpassView />} />
+          <Route path="/guard" element={<GuardOutpassView />} />
           
         </Routes>
       </div>
