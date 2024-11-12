@@ -133,46 +133,96 @@ router.post('/listItems', async (req, res) => {
     }
 });
 
-// Create new outpass details
 router.post('/outpassDetails', async (req, res) => {
-    console.log('Creating new outpass details:', req.body);
+    console.log('Creating/Updating outpass details:', req.body);
 
     try {
-        const outpassDetail = new OutpassDetail({
-            ...req.body,
-            listItemId: req.body.listItemId,
-            status: 'pending',
-            createdAt: new Date()
-        });
-        await outpassDetail.save();
-        console.log('Created outpass detail:', outpassDetail);
+        // Validate required fields
+        const requiredFields = [
+            'studentName', 'studentEmail', 'studentContactNumber',
+            'parentName', 'parentEmail', 'parentContactNumber',
+            'leaveFrom', 'leaveFromTime', 'leaveTo', 'leaveToTime',
+            'reasonForAbsence'
+        ];
 
-        // Update the list item with status and outpassId
+        for (const field of requiredFields) {
+            if (!req.body[field]) {
+                return res.status(400).json({ 
+                    message: `Missing required field: ${field}` 
+                });
+            }
+        }
+
+        let outpassDetail;
+        const outpassData = {
+            ...req.body,
+            status: 'pending',
+            updatedAt: new Date()
+        };
+
+        // If listItemId exists, try to update existing outpass
+        if (req.body.listItemId) {
+            outpassDetail = await OutpassDetail.findOne({ listItemId: req.body.listItemId });
+        }
+
+        if (outpassDetail) {
+            // Update existing outpass
+            outpassDetail = await OutpassDetail.findOneAndUpdate(
+                { listItemId: req.body.listItemId },
+                { $set: outpassData },
+                { new: true }
+            );
+        } else {
+            // Create new outpass
+            outpassData.listItemId = req.body.listItemId || new mongoose.Types.ObjectId().toString();
+            outpassData.createdAt = new Date();
+            outpassDetail = new OutpassDetail(outpassData);
+            await outpassDetail.save();
+        }
+
+        // Find and update student
         const student = await Student.findOne({ email: req.body.studentEmail });
-        if (student) {
-            const updatedListItems = student.listItems.map(item => 
-                item.id === req.body.listItemId 
+        if (!student) {
+            throw new Error('Student not found');
+        }
+
+        // Update student's listItems
+        const listItemExists = student.listItems.some(item => item.id === outpassDetail.listItemId);
+        
+        if (listItemExists) {
+            // Update existing list item
+            student.listItems = student.listItems.map(item => 
+                item.id === outpassDetail.listItemId 
                     ? { 
-                        ...item, 
+                        ...item.toObject(), 
                         submitted: true,
                         status: 'pending',
                         outpassId: outpassDetail._id.toString()
                     }
                     : item
             );
-            
-            student.listItems = updatedListItems;
-            await student.save();
-            console.log('Updated student list items with new outpass');
+        } else {
+            // Add new list item
+            student.listItems.push({
+                id: outpassDetail.listItemId,
+                submitted: true,
+                status: 'pending',
+                outpassId: outpassDetail._id.toString(),
+                createdAt: new Date()
+            });
         }
 
+        await student.save();
         res.status(201).json(outpassDetail);
+
     } catch (error) {
         console.error('Error saving outpass details:', error);
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ 
+            message: 'Server error',
+            error: error.message 
+        });
     }
 });
-
 // Get outpass details
 router.get('/outpassDetails/:id', async (req, res) => {
     try {
