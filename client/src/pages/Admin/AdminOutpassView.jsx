@@ -99,7 +99,7 @@ function AdminOutpassView() {
 
     return (
         <div className="p-8 max-w-4xl mx-auto">
-            <h2 className="text-2xl font-bold mb-6">Outpass Request Details</h2>
+            <h2 className="text-primary-contrastText text-2xl font-bold mb-6">Outpass Request Details</h2>
             
             <div className="bg-white shadow-lg rounded-lg p-6">
                 <div className="grid grid-cols-2 gap-4">
