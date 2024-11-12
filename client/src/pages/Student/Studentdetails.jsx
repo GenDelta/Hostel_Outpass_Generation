@@ -208,7 +208,7 @@ function StudentOutPassDetails() {
                     />
                     <div className='text-black rounded'>
                         <p className="font-semibold">Student Name: {formData.studentName}</p>
-                        <p>Email: {formData.studentEmail}</p>
+                        <p className='overflow-auto'>Email: {formData.studentEmail}</p>
                         {viewOnly && outpassStatus && (
                             <div className="mt-4">
                                 <p className="font-semibold mb-2">Outpass Status:</p>
@@ -218,7 +218,7 @@ function StudentOutPassDetails() {
                     </div>
                 </div>
 
-                <div className="space-y-4 mt-[480px]">
+                <div className="h-screen space-y-4 mt-[480px]">
                     <button 
                         onClick={handleBackButton} 
                         className="w-full py-2 bg-red-500 text-black rounded hover:bg-red-600 disabled:opacity-50"
@@ -245,7 +245,7 @@ function StudentOutPassDetails() {
                 </div>
             </div>
 
-            <div className="flex-1 bg-gray-100 p-10">
+            <div className="flex-1 bg-gray-100 min-h-fit p-10">
                 <h2 className="bg-gray-900 inline-block text-2xl text-white font-semibold mb-6">Student Outpass Details</h2>
                 {error && (
                     <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
