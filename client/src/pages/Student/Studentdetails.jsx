@@ -59,6 +59,10 @@ function StudentOutPassDetails() {
         navigate('/');
     };
 
+    const handleBackButton = () => {
+        navigate('/student', { state: { email: formData.studentEmail } });
+    };
+
     const validateForm = () => {
         const requiredFields = [
             'studentName', 'studentEmail', 'studentContactNumber',
@@ -215,6 +219,13 @@ function StudentOutPassDetails() {
                 </div>
 
                 <div className="space-y-4 mt-[480px]">
+                    <button 
+                        onClick={handleBackButton} 
+                        className="w-full py-2 bg-red-500 text-black rounded hover:bg-red-600 disabled:opacity-50"
+                        disabled={loading}
+                    >
+                        Back
+                    </button>
                     <button 
                         onClick={handleHomePage} 
                         className="w-full py-2 bg-yellow-500 text-black rounded hover:bg-yellow-600 disabled:opacity-50"
