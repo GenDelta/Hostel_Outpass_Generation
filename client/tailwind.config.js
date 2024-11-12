@@ -17,7 +17,7 @@ export default {
         secondary: {
           DEFAULT: "# ",
           light: "#A3A3A3",
-          dark: "#222222",
+          dark: "#111827",
         },
         background: {
           elevation: "#2a2a2a",
