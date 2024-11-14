@@ -1,5 +1,3 @@
-// models/Outpassdetail.js
-
 const mongoose = require('mongoose');
 
 const outpassDetailSchema = new mongoose.Schema({

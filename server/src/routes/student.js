@@ -7,7 +7,6 @@ const OutpassDetail = require('../models/Outpassdetail');
 const Admin = require('../models/Admin');
 const Security = require('../models/Security');
 
-// Set up Multer for file uploads
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, 'uploads/');
@@ -19,7 +18,6 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// Registration route
 router.post('/register', upload.single('photo'), async (req, res) => {
     const { name, email, password, prn } = req.body;
     const photo = req.file ? req.file.filename : null;
@@ -30,7 +28,7 @@ router.post('/register', upload.single('photo'), async (req, res) => {
         password,
         prn,
         photo,
-        listItems: [] // Initialize with empty list items
+        listItems: [] 
     });
 
     try {
@@ -42,7 +40,6 @@ router.post('/register', upload.single('photo'), async (req, res) => {
     }
 });
 
-// Login route
 router.post('/login', async (req, res) => {
     const { email, password } = req.body;
     console.log('Login attempt for:', email);
@@ -53,21 +50,18 @@ router.post('/login', async (req, res) => {
     }
 
     try {
-        // Check in Admin collection
         let user = await Admin.findOne({ email });
         if (user) {
             const match = user.password === password;
             if (match) return res.status(200).json({ role: 'Admin' });
         }
 
-        // Check in Student collection
         user = await Student.findOne({ email });
         if (user) {
             const match = user.password === password;
             if (match) return res.status(200).json({ role: 'Student' });
         }
 
-        // Check in Security collection
         user = await Security.findOne({ email });
         if (user) {
             const match = user.password === password;
@@ -81,7 +75,6 @@ router.post('/login', async (req, res) => {
     }
 });
 
-// Get list items for a student
 router.get('/listItems', async (req, res) => {
     const { email } = req.query;
     console.log('Fetching list items for email:', email);
@@ -93,7 +86,6 @@ router.get('/listItems', async (req, res) => {
             return res.status(404).json({ message: 'Student not found' });
         }
 
-        // Ensure each list item has a status
         const listItems = student.listItems.map(item => ({
             ...item.toObject(),
             status: item.status || (item.submitted ? 'pending' : 'not submitted')
@@ -107,7 +99,6 @@ router.get('/listItems', async (req, res) => {
     }
 });
 
-// Update list items for a student
 router.post('/listItems', async (req, res) => {
     const { email, listItems } = req.body;
     console.log('Updating list items for email:', email);
@@ -137,7 +128,6 @@ router.post('/outpassDetails', async (req, res) => {
     console.log('Creating/Updating outpass details:', req.body);
 
     try {
-        // Validate required fields
         const requiredFields = [
             'studentName', 'studentEmail', 'studentContactNumber',
             'parentName', 'parentEmail', 'parentContactNumber',
@@ -160,37 +150,31 @@ router.post('/outpassDetails', async (req, res) => {
             updatedAt: new Date()
         };
 
-        // If listItemId exists, try to update existing outpass
         if (req.body.listItemId) {
             outpassDetail = await OutpassDetail.findOne({ listItemId: req.body.listItemId });
         }
 
         if (outpassDetail) {
-            // Update existing outpass
             outpassDetail = await OutpassDetail.findOneAndUpdate(
                 { listItemId: req.body.listItemId },
                 { $set: outpassData },
                 { new: true }
             );
         } else {
-            // Create new outpass
             outpassData.listItemId = req.body.listItemId || new mongoose.Types.ObjectId().toString();
             outpassData.createdAt = new Date();
             outpassDetail = new OutpassDetail(outpassData);
             await outpassDetail.save();
         }
 
-        // Find and update student
         const student = await Student.findOne({ email: req.body.studentEmail });
         if (!student) {
             throw new Error('Student not found');
         }
 
-        // Update student's listItems
         const listItemExists = student.listItems.some(item => item.id === outpassDetail.listItemId);
         
         if (listItemExists) {
-            // Update existing list item
             student.listItems = student.listItems.map(item => 
                 item.id === outpassDetail.listItemId 
                     ? { 
@@ -202,7 +186,6 @@ router.post('/outpassDetails', async (req, res) => {
                     : item
             );
         } else {
-            // Add new list item
             student.listItems.push({
                 id: outpassDetail.listItemId,
                 submitted: true,
@@ -223,19 +206,16 @@ router.post('/outpassDetails', async (req, res) => {
         });
     }
 });
-// Get outpass details
 router.get('/outpassDetails/:id', async (req, res) => {
     try {
         console.log('Fetching outpass details for ID:', req.params.id);
         
         let outpassDetail;
         
-        // Try to find by MongoDB ObjectId
         if (mongoose.Types.ObjectId.isValid(req.params.id)) {
             outpassDetail = await OutpassDetail.findById(req.params.id);
         }
         
-        // If not found, try to find by listItemId
         if (!outpassDetail) {
             outpassDetail = await OutpassDetail.findOne({ listItemId: req.params.id });
         }
@@ -253,7 +233,6 @@ router.get('/outpassDetails/:id', async (req, res) => {
     }
 });
 
-// Delete outpass details
 router.delete('/outpassDetails/:id', async (req, res) => {
     try {
         console.log('Deleting outpass details for ID:', req.params.id);
@@ -261,7 +240,6 @@ router.delete('/outpassDetails/:id', async (req, res) => {
         let result;
         let outpassDetail;
         
-        // Find the outpass detail first to get associated student email
         if (mongoose.Types.ObjectId.isValid(req.params.id)) {
             outpassDetail = await OutpassDetail.findById(req.params.id);
         }
@@ -270,10 +248,8 @@ router.delete('/outpassDetails/:id', async (req, res) => {
         }
 
         if (outpassDetail) {
-            // Delete the outpass detail
             result = await OutpassDetail.findByIdAndDelete(outpassDetail._id);
 
-            // Update the student's list item
             if (outpassDetail.studentEmail) {
                 const student = await Student.findOne({ email: outpassDetail.studentEmail });
                 if (student) {
@@ -306,7 +282,6 @@ router.delete('/outpassDetails/:id', async (req, res) => {
     }
 });
 
-// Get pending outpasses for admin
 router.get('/pendingOutpasses', async (req, res) => {
     try {
         const pendingOutpasses = await OutpassDetail.find({ status: 'pending' })
@@ -319,7 +294,6 @@ router.get('/pendingOutpasses', async (req, res) => {
     }
 });
 
-// Admin decision on outpass
 router.post('/admin/outpass/:outpassId/decision', async (req, res) => {
     const { outpassId } = req.params;
     const { decision } = req.body;
@@ -332,12 +306,10 @@ router.post('/admin/outpass/:outpassId/decision', async (req, res) => {
     try {
         let outpass;
         
-        // Try to find by MongoDB ObjectId first
         if (mongoose.Types.ObjectId.isValid(outpassId)) {
             outpass = await OutpassDetail.findById(outpassId);
         }
         
-        // If not found, try to find by listItemId
         if (!outpass) {
             outpass = await OutpassDetail.findOne({ listItemId: outpassId });
         }
@@ -347,13 +319,11 @@ router.post('/admin/outpass/:outpassId/decision', async (req, res) => {
             return res.status(404).json({ message: 'Outpass not found' });
         }
 
-        // Update the status in OutpassDetail
         const newStatus = decision === 'approve' ? 'approved' : 'rejected';
         outpass.status = newStatus;
         await outpass.save();
         console.log('Updated outpass status to:', newStatus);
 
-        // Update the status in Student's listItems
         const student = await Student.findOne({ email: outpass.studentEmail });
         if (student) {
             const updatedListItems = student.listItems.map(item => 
@@ -375,7 +345,6 @@ router.post('/admin/outpass/:outpassId/decision', async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 });
-// Get approved outpasses for security guard
 router.get('/approvedOutpasses', async (req, res) => {
     try {
         const approvedOutpasses = await OutpassDetail.find({ status: 'approved' })

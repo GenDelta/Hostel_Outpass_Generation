@@ -122,7 +122,7 @@ function StudentOutPassDetails() {
             setLoading(true);
     
             const outpassData = {
-                listItemId: listItemId || undefined,  // Only include if it exists
+                listItemId: listItemId || undefined,  
                 ...formData,
                 status: 'pending'
             };
@@ -189,7 +189,8 @@ function StudentOutPassDetails() {
                     />
                     <div className="text-black rounded">
                         <p className="overflow-auto font-semibold">Student Name: {formData.studentName}</p>
-                        <p className="font-semibold overflow-auto">Email: {formData.studentEmail}</p>
+                        <p className="overflow-auto font-semibold">Email:</p>
+                        <p className="font-semibold overflow-auto">{formData.studentEmail}</p>
                         {viewOnly && outpassStatus && (
                             <div className="mt-4">
                                 <p className="font-semibold mb-2">Outpass Status:</p>

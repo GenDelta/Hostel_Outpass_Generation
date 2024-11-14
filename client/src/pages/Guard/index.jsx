@@ -65,7 +65,6 @@ const GuardOutpassView = () => {
           </button>
         </div>
 
-        {/* Main Content */}
         <div className="flex-1 p-8">
           <h2 className="text-2xl font-bold mb-6">Approved Outpasses</h2>
           
@@ -102,7 +101,6 @@ const GuardOutpassView = () => {
         </div>
       </div>
 
-      {/* Details Modal */}
       {selectedOutpass && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg max-w-2xl w-full p-6">

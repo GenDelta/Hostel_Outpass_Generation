@@ -43,7 +43,7 @@ function Register() {
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
-        if (file && file.size <= 1048576) { // 1MB in bytes
+        if (file && file.size <= 1048576) {
             setFormData({ ...formData, photo: file });
             setErrors({ ...errors, photo: '' });
         } else {
@@ -54,7 +54,6 @@ function Register() {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Create a FormData object to send files
         const data = new FormData();
         data.append('name', formData.name);
         data.append('prn', formData.prn);
@@ -70,15 +69,12 @@ function Register() {
 
             if (response.ok) {
                 console.log("Form submitted:", formData);
-                // Redirect to the login page after successful registration
                 navigate('/');
             } else {
                 console.log("Error submitting form:", response.statusText);
-                // Handle error (e.g., show an error message)
             }
         } catch (error) {
             console.log("Error submitting form:", error);
-            // Handle error (e.g., show an error message)
         }
     };
 

@@ -19,7 +19,6 @@ function Student({ email: propEmail }) {
             }
             const data = await response.json();
             
-            // Simplify the processing of items
             const processedItems = data.map(item => ({
                 ...item,
                 submitted: item.submitted || false
@@ -39,7 +38,7 @@ function Student({ email: propEmail }) {
     useEffect(() => {
         const intervalId = setInterval(() => {
             setReloadKey(prev => prev + 1);
-        }, 30000); // Poll every 30 seconds
+        }, 30000); 
 
         return () => clearInterval(intervalId);
     }, []);

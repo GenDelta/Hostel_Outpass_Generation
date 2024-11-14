@@ -11,7 +11,7 @@ const ConfirmationPage = () => {
             replace: true,
             state: { 
                 email,
-                reload: true // Add this flag
+                reload: true 
             }
         });
     };

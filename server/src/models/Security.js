@@ -1,5 +1,3 @@
-
-// models/Security.js
 const mongoose = require('mongoose');
 
 const securitySchema = new mongoose.Schema({
