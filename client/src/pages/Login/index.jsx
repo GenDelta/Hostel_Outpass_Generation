@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Link } from "react-router-dom";
 
 function Login() {
-    document.title = "Outpass System"
+    
     const navigate = useNavigate();
 
     function Show(event) {

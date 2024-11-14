@@ -12,6 +12,7 @@ import AdminOutpassView from "./pages/Admin/AdminOutpassView";
 
 
 function App() {
+  document.title = "Outpass System"
   const [buttonValue, setButtonValue] = useState("");
 
   const getData = (data) => {

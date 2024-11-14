@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 function Student({ email: propEmail }) {
+    
     const location = useLocation();
     const [email, setEmail] = useState(propEmail || location.state?.email);
     const [listItems, setListItems] = useState([]);

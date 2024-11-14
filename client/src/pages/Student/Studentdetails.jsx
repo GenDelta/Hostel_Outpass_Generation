@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 function StudentOutPassDetails() {
+    
     const navigate = useNavigate();
     const location = useLocation();
     const { listItemId, viewOnly, email } = location.state || {};
