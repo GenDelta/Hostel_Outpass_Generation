@@ -20,6 +20,7 @@
 body,
 #root {
   background-color: theme("colors.secondary.dark");
+  
 }
 
 a {

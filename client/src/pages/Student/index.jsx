@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 function Student({ email: propEmail }) {
-    
+
     const location = useLocation();
     const [email, setEmail] = useState(propEmail || location.state?.email);
     const [listItems, setListItems] = useState([]);
@@ -13,18 +13,18 @@ function Student({ email: propEmail }) {
     const getListItems = async () => {
         try {
             if (!email) return;
-            
+
             const response = await fetch(`http://localhost:3000/student/listItems?email=${email}`);
             if (!response.ok) {
                 throw new Error(`Error: ${response.status}`);
             }
             const data = await response.json();
-            
+
             const processedItems = data.map(item => ({
                 ...item,
                 submitted: item.submitted || false
             }));
-            
+
             setListItems(processedItems);
         } catch (error) {
             console.error('Error loading list items:', error);
@@ -39,7 +39,7 @@ function Student({ email: propEmail }) {
     useEffect(() => {
         const intervalId = setInterval(() => {
             setReloadKey(prev => prev + 1);
-        }, 30000); 
+        }, 30000);
 
         return () => clearInterval(intervalId);
     }, []);
@@ -51,8 +51,8 @@ function Student({ email: propEmail }) {
     }, [location.state]);
 
     const handle = (listItem) => {
-        navigate('/studentdetails', { 
-            state: { 
+        navigate('/studentdetails', {
+            state: {
                 listItemId: listItem.id,
                 outpassId: listItem.outpassId,
                 viewOnly: listItem.submitted,
@@ -95,26 +95,27 @@ function Student({ email: propEmail }) {
 
     const deleteListItem = async (id) => {
         try {
-            const itemToDelete = listItems.find(item => item.id === id);
-            if (itemToDelete?.outpassId) {
-                const deleteDetailsResponse = await fetch(
-                    `http://localhost:3000/student/outpassDetails/${itemToDelete.outpassId}`,
-                    { method: 'DELETE' }
-                );
-                
-                if (!deleteDetailsResponse.ok) {
-                    throw new Error('Failed to delete outpass details');
-                }
+          const itemToDelete = listItems.find(item => item.id === id);
+      
+          if (itemToDelete.outpassId) {
+            const deleteDetailsResponse = await fetch(
+              `http://localhost:3000/student/outpassDetails/${itemToDelete.outpassId}`,
+              { method: 'DELETE' }
+            );
+      
+            if (!deleteDetailsResponse.ok) {
+              throw new Error('Failed to delete outpass details');
             }
-
-            const updatedItems = listItems.filter(item => item.id !== id);
-            setListItems(updatedItems);
-            await saveListItems(updatedItems);
+          }
+      
+          const updatedItems = listItems.filter(item => item.id !== id);
+          setListItems(updatedItems);
+          await saveListItems(updatedItems);
         } catch (error) {
-            console.error('Error deleting item:', error);
-            setError('Failed to delete item');
+          console.error('Error deleting item:', error);
+          setError('Failed to delete item');
         }
-    };
+      };
 
     return (
         <div>
@@ -128,14 +129,14 @@ function Student({ email: propEmail }) {
                 <h1 className="relative top-7 left-11 font-bold">Student</h1>
             </div>
 
-            <button 
-                onClick={() => navigate("/")} 
+            <button
+                onClick={() => navigate("/")}
                 className="scale-100 relative top-12 bg-yellow-500 m-5 h-10 w-56 transition duration-300 hover:scale-110 hover:bg-yellow-600 active:bg-yellow-950"
             >
                 Home Page
             </button>
-            <button 
-                onClick={createListItem} 
+            <button
+                onClick={createListItem}
                 className="scale-100 relative top-32 -left-[16%] bg-green-500 h-10 w-56 transition duration-300 hover:scale-110 hover:bg-green-600 active:bg-green-950"
             >
                 Create
@@ -156,13 +157,15 @@ function Student({ email: propEmail }) {
                                 >
                                     {item.submitted ? 'View' : 'Enter'}
                                 </button>
-                                <button
-                                    onClick={() => deleteListItem(item.id)}
-                                    className="bg-red-500 px-4 py-2 rounded text-white scale-100 transition-transform duration-300 hover:scale-110 hover:bg-red-700 active:bg-red-950"
-                                    type="button"
-                                >
-                                    Delete
-                                </button>
+                                {!item.outpassId && (
+                                    <button
+                                        onClick={() => deleteListItem(item.id)}
+                                        className="bg-red-600 px-4 py-2 rounded text-white scale-100 transition-transform duration-300 hover:scale-110 hover:bg-red-700 active:bg-red-950"
+                                        type="button"
+                                    >
+                                        Delete
+                                    </button>
+                                )}
                             </div>
                         </li>
                     ))}
