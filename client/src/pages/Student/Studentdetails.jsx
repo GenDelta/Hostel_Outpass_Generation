@@ -39,7 +39,7 @@ function StudentDetails() {
           setOutpassStatus(data.status);
         } catch (error) {
           console.error('Error fetching outpass details:', error);
-          setError('Failed to load outpass details');
+          setError('The Outpass has been deleted');
         } finally {
           setLoading(false);
         }
