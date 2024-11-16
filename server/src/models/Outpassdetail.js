@@ -65,7 +65,6 @@ const outpassDetailSchema = new mongoose.Schema({
     }
 });
 
-// Update the updatedAt timestamp before saving
 outpassDetailSchema.pre('save', function(next) {
     this.updatedAt = new Date();
     next();
